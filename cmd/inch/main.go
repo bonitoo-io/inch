@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/influxdata/inch"
+	"github.com/bonitoo-io/inch"
 )
 
 // Main represents the main program execution.
