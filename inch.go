@@ -534,7 +534,7 @@ func (s *Simulator) runClient(ctx context.Context, ch <-chan []byte) {
 				if err := s.sendBatch(buf); err == ErrConnectionRefused {
 					return
 				} else if err != nil {
-					fmt.Fprintln(s.Stderr, err)
+					fmt.Fprintf(s.Stderr,"%s - %s", time.Now().Format(time.RFC3339), err)
 					s.mu.Lock()
 					totalErrors := s.totalErrors
 					s.mu.Unlock()
