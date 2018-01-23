@@ -255,6 +255,10 @@ func (s *Simulator) Run(ctx context.Context) error {
 	elapsed := time.Since(s.now)
 	fmt.Fprintln(s.Stdout, "")
 	fmt.Fprintf(s.Stdout, "Total time: %0.1f seconds\n", elapsed.Seconds())
+	//if monitor is not running, print final statistics
+	if !s.Verbose {
+		s.printMonitorStats()
+	}
 
 	return nil
 }
@@ -534,7 +538,7 @@ func (s *Simulator) runClient(ctx context.Context, ch <-chan []byte) {
 				if err := s.sendBatch(buf); err == ErrConnectionRefused {
 					return
 				} else if err != nil {
-					fmt.Fprintf(s.Stderr,"%s - %s", time.Now().Format(time.RFC3339), err)
+					fmt.Fprintf(s.Stderr,"%s - %s\n", time.Now().Format(time.RFC3339), err)
 					s.mu.Lock()
 					totalErrors := s.totalErrors
 					s.mu.Unlock()
