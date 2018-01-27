@@ -61,6 +61,9 @@ type Simulator struct {
 
 	// Decay factor used when weighting average latency returned by server.
 	alpha float64
+	//actual tags values
+	tagValues	[]int
+	maxTagValues	[]int
 
 	Verbose        bool
 	ReportHost     string
@@ -298,13 +301,38 @@ func (s *Simulator) BatchN() int {
 	return n
 }
 
+func (s *Simulator) stepTags() {
+	// Increment next tag value.
+	for i := range s.tagValues {
+		s.tagValues[i]++
+		if s.maxTagValues[i] < s.tagValues[i] {
+			s.maxTagValues[i] = s.tagValues[i]
+		}
+		if s.tagValues[i] < s.Tags[i] {
+			break
+		} else {
+			s.tagValues[i] = 0 // reset to zero, increment next value
+			continue
+		}
+	}
+}
+
+func (s *Simulator) actualSeriesCardinality() int {
+	var tc = 1
+	for _,t := range s.maxTagValues {
+		tc *= t
+	}
+	return tc
+}
+
 // generateBatches returns a channel for streaming batches.
 func (s *Simulator) generateBatches() <-chan []byte {
 	ch := make(chan []byte, 10)
 
 	go func() {
 		var buf bytes.Buffer
-		values := make([]int, len(s.Tags))
+		s.tagValues = make([]int, len(s.Tags))
+		s.maxTagValues = make([]int, len(s.Tags))
 		lastWrittenTotal := s.WrittenN()
 
 		// Generate field string.
@@ -320,7 +348,7 @@ func (s *Simulator) generateBatches() <-chan []byte {
 		for i := 0; i < s.PointN(); i++ {
 			// Write point.
 			buf.Write([]byte(fmt.Sprintf("m%d", i%s.Measurements)))
-			for j, value := range values {
+			for j, value := range s.tagValues {
 				fmt.Fprintf(&buf, ",tag%d=value%d", j, value)
 			}
 
@@ -334,16 +362,7 @@ func (s *Simulator) generateBatches() <-chan []byte {
 				fmt.Fprint(&buf, "\n")
 			}
 
-			// Increment next tag value.
-			for i := range values {
-				values[i]++
-				if values[i] < s.Tags[i] {
-					break
-				} else {
-					values[i] = 0 // reset to zero, increment next value
-					continue
-				}
-			}
+			s.stepTags()
 
 			// Start new batch, if necessary.
 			if i > 0 && i%s.BatchSize == 0 {
@@ -391,6 +410,7 @@ func (s *Simulator) Stats() *Stats {
 	if len(s.latencyHistory) > 0 {
 		respMean = int(s.totalLatency) / len(s.latencyHistory) / int(time.Millisecond)
 	}
+
 	stats := &Stats{
 		Time: time.Unix(0, int64(time.Since(s.now))),
 		Tags: s.ReportTags,
@@ -400,6 +420,7 @@ func (s *Simulator) Stats() *Stats {
 			"values_written": s.writtenN * s.FieldsPerPoint,
 			"points_ps":      pThrough,
 			"values_ps":      pThrough * float64(s.FieldsPerPoint),
+			"cardinality":    s.actualSeriesCardinality(),
 			"write_error":    s.currentErrors,
 			"resp_wma":       int(s.wmaLatency),
 			"resp_mean":      respMean,
@@ -504,8 +525,8 @@ func (s *Simulator) printMonitorStats() {
 	currentErrors := s.currentErrors
 	s.mu.Unlock()
 
-	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec) errors: %d%s%s\n",
-		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed),
+	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec), %d series cardinality, errors: %d%s%s\n",
+		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.actualSeriesCardinality(),
 		currentErrors,
 		delay, responses)
 }
