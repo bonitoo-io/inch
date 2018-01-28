@@ -73,8 +73,10 @@ func (m *Main) ParseFlags(args []string) error {
 	fs.IntVar(&m.inch.Concurrency, "c", 1, "Concurrency")
 	fs.IntVar(&m.inch.Measurements, "m", 1, "Measurements")
 	tags := fs.String("t", "10,10,10", "Tag cardinality")
+	fs.IntVar(&m.inch.TagSize, "tag-size", -1, "Minimum size of tag value (default same as number of digits of value)")
 	fs.IntVar(&m.inch.PointsPerSeries, "p", 100, "Points per series")
 	fs.IntVar(&m.inch.FieldsPerPoint, "f", 1, "Fields per point")
+	fs.IntVar(&m.inch.FieldSize, "field-size", 1, "Size (in digits) of field value (default 1)")
 	fs.IntVar(&m.inch.BatchSize, "b", 5000, "Batch size")
 	fs.StringVar(&m.inch.Database, "db", "stress", "Database to write to")
 	fs.StringVar(&m.inch.ShardDuration, "shard-duration", "7d", "Set shard duration (default 7d)")
@@ -101,11 +103,13 @@ func (m *Main) ParseFlags(args []string) error {
 	m.inch.ReportTags = map[string]string{
 		"stress_tool": "inch",
 		"t":           *tags,
-		"batch_size":  fmt.Sprint(m.inch.BatchSize),
+		"tag_size":	   fmt.Sprint(m.inch.TagSize),
+		"batch_size":  fmt.Sprint(m.inch.BatchSize ),
 		"p":           fmt.Sprint(m.inch.PointsPerSeries),
 		"c":           fmt.Sprint(m.inch.Concurrency),
 		"m":           fmt.Sprint(m.inch.Measurements),
 		"f":           fmt.Sprint(m.inch.FieldsPerPoint),
+		"field_size":  fmt.Sprint(m.inch.FieldSize),
 		"sd":          m.inch.ShardDuration,
 	}
 

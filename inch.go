@@ -80,8 +80,10 @@ type Simulator struct {
 	Concurrency      int
 	Measurements     int   // Number of measurements
 	Tags             []int // tag cardinalities
+	TagSize			 int
 	PointsPerSeries  int
 	FieldsPerPoint   int
+	FieldSize		 int
 	BatchSize        int
 	TargetMaxLatency time.Duration
 
@@ -342,14 +344,23 @@ func (s *Simulator) generateBatches() <-chan []byte {
 			if i < s.FieldsPerPoint-1 {
 				delim = ","
 			}
-			fields = append(fields, []byte(fmt.Sprintf("v%d=1%s", i, delim))...)
-		}
+			var f bytes.Buffer
+			for j := 1; j <= s.FieldSize; j++ {
+				f.WriteString(fmt.Sprint(i+1))
+			}
 
+			fields = append(fields, []byte(fmt.Sprintf("v%d=%s%s", i, f.String(), delim))...)
+		}
+		ts := s.TagSize
+		if ts < 1 {
+			ts = 1
+		}
+		tagFormat := fmt.Sprintf(",tag%%d=value%%0%dd", ts)
 		for i := 0; i < s.PointN(); i++ {
 			// Write point.
 			buf.Write([]byte(fmt.Sprintf("m%d", i%s.Measurements)))
 			for j, value := range s.tagValues {
-				fmt.Fprintf(&buf, ",tag%d=value%d", j, value)
+				fmt.Fprintf(&buf, tagFormat, j, value)
 			}
 
 			// Write fields
