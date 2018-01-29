@@ -96,11 +96,14 @@ type Simulator struct {
 
 // NewSimulator returns a new instance of Simulator.
 func NewSimulator() *Simulator {
-	writeClient := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
+	writeClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		},
-	}}
+		Timeout: 30*time.Second,
+		}
 
 	// Create an Simulator object with reasonable defaults.
 	return &Simulator{
