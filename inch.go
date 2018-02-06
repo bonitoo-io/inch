@@ -263,9 +263,12 @@ func (s *Simulator) Run(ctx context.Context) error {
 	elapsed := time.Since(s.now)
 	fmt.Fprintln(s.Stdout, "")
 	fmt.Fprintf(s.Stdout, "Total time: %0.1f seconds\n", elapsed.Seconds())
-	//if monitor is not running, print final statistics
+	//if monitor is not running, print and send final statistics
 	if !s.Verbose {
 		s.printMonitorStats()
+		if s.ReportHost != "" {
+			s.sendMonitorStats(true)
+		}
 	}
 
 	return nil
