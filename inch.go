@@ -65,6 +65,8 @@ type Simulator struct {
 	tagValues	[]int
 	maxTagValues	[]int
 
+	hostsDivider	int
+
 	Verbose        bool
 	ReportHost     string
 	ReportUser     string
@@ -73,7 +75,7 @@ type Simulator struct {
 	DryRun         bool
 	MaxErrors      int
 
-	Host             string
+	Hosts             []string
 	User             string
 	Password         string
 	Consistency      string
@@ -182,7 +184,7 @@ func (s *Simulator) Run(ctx context.Context) error {
 	defer cancel()
 
 	// Print settings.
-	fmt.Fprintf(s.Stdout, "Host: %s\n", s.Host)
+	fmt.Fprintf(s.Stdout, "Hosts: %s\n", strings.Join(s.Hosts, ","))
 	fmt.Fprintf(s.Stdout, "Concurrency: %d\n", s.Concurrency)
 	fmt.Fprintf(s.Stdout, "Measurements: %d\n", s.Measurements)
 	fmt.Fprintf(s.Stdout, "Tag cardinalities: %+v\n", s.Tags)
@@ -464,7 +466,7 @@ func (s *Simulator) Stats() *Stats {
 
 	// Add runtime stats for the remote instance.
 	var vars Vars
-	resp, err := http.Get(strings.TrimSuffix(s.Host, "/") + "/debug/vars")
+	resp, err := http.Get(strings.TrimSuffix(s.Hosts[0], "/") + "/debug/vars")
 	if err != nil {
 		// Don't log error as it can get spammy.
 		return stats
@@ -608,9 +610,9 @@ func (s *Simulator) runClient(ctx context.Context, ch <-chan []byte) {
 func (s *Simulator) setup() error {
 
 	// Validate that we can connect to the test host
-	resp, err := http.Get(strings.TrimSuffix(s.Host, "/") + "/ping")
+	resp, err := http.Get(strings.TrimSuffix(s.Hosts[0], "/") + "/ping")
 	if err != nil {
-		return fmt.Errorf("unable to connect to %q: %s", s.Host, err)
+		return fmt.Errorf("unable to connect to %q: %s", s.Hosts[0], err)
 	}
 	defer resp.Body.Close()
 
@@ -624,7 +626,7 @@ func (s *Simulator) setup() error {
 		s.ReportTags["version"] = version
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/query", s.Host), strings.NewReader("q=CREATE+DATABASE+"+s.Database+"+WITH+DURATION+"+s.ShardDuration))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/query", s.Hosts[0]), strings.NewReader("q=CREATE+DATABASE+"+s.Database+"+WITH+DURATION+"+s.ShardDuration))
 	if err != nil {
 		return err
 	}
@@ -651,9 +653,17 @@ func (s *Simulator) sendBatch(buf []byte) error {
 		return nil
 	}
 
-	// Send batch.
-	now := time.Now().UTC()
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/write?db=%s&precision=ns&consistency=%s", s.Host, s.Database, s.Consistency), bytes.NewReader(buf))
+	url := s.Hosts[s.hostsDivider%len(s.Hosts)]
+
+	s.mu.Lock()
+	s.hostsDivider++
+	if s.hostsDivider == len(s.Hosts) {
+		s.hostsDivider = 0
+	}
+	s.mu.Unlock()
+
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/write?db=%s&precision=ns&consistency=%s", url, s.Database, s.Consistency), bytes.NewReader(buf))
 	if err != nil {
 		return err
 	}
@@ -663,8 +673,11 @@ func (s *Simulator) sendBatch(buf []byte) error {
 	if s.User != "" && s.Password != "" {
 		req.SetBasicAuth(s.User, s.Password)
 	}
-
+	// Send batch.
+	now := time.Now().UTC()
 	resp, err := s.writeClient.Do(req)
+	latency := time.Since(now)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
 			return ErrConnectionRefused
@@ -672,6 +685,7 @@ func (s *Simulator) sendBatch(buf []byte) error {
 		return err
 	}
 	defer resp.Body.Close()
+
 
 	// Return body as error if unsuccessful.
 	if resp.StatusCode != 204 {
@@ -697,7 +711,7 @@ func (s *Simulator) sendBatch(buf []byte) error {
 		return fmt.Errorf("[%d] %s", resp.StatusCode, strings.Replace(string(body), "\n", " ", -1))
 	}
 
-	latency := time.Since(now)
+
 	s.mu.Lock()
 	s.totalLatency += latency
 

@@ -66,7 +66,7 @@ func (m *Main) ParseFlags(args []string) error {
 	reportTags := fs.String("report-tags", "", "Comma separated k=v tags to report alongside metrics")
 	fs.BoolVar(&m.inch.DryRun, "dry", false, "Dry run (maximum writer perf of inch on box)")
 	fs.IntVar(&m.inch.MaxErrors, "max-errors", 0, "Terminate process if this many errors encountered")
-	fs.StringVar(&m.inch.Host, "host", "http://localhost:8086", "Host")
+	hosts := fs.String( "hosts", "http://localhost:8086", "Comma-separated list of hosts. Will be used in round-robin fashion")
 	fs.StringVar(&m.inch.User, "user", "", "Host User")
 	fs.StringVar(&m.inch.Password, "password", "", "Host Password")
 	fs.StringVar(&m.inch.Consistency, "consistency", "any", "Write consistency (default any)")
@@ -87,6 +87,11 @@ func (m *Main) ParseFlags(args []string) error {
 
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	m.inch.Hosts = strings.Split(*hosts,",")
+	if len(m.inch.Hosts) == 0 {
+		return fmt.Errorf("cannot partse hosts: %s", *hosts)
 	}
 
 	// Parse tag cardinalities.
