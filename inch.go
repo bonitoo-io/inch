@@ -151,8 +151,14 @@ func (s *Simulator) Validate() error {
 			return el
 		}
 
-		if _, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks"`), "", "")); err != nil {
-			el = append(el, fmt.Errorf("unable to connect to %q: %s", s.ReportHost, err))
+		if resp, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks"`), "", "")); err != nil || resp.Err != "" {
+			var errMess string
+			if err != nil {
+				errMess = err.Error()
+			} else {
+				errMess = resp.Err
+			}
+			el = append(el, fmt.Errorf("unable to connect to %q: %s", s.ReportHost, errMess))
 			return el
 		}
 	}
