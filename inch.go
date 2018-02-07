@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -37,18 +36,19 @@ func (el ErrorList) Error() string {
 
 // Simulator represents the main program execution.
 type Simulator struct {
-	mu             sync.Mutex
-	writtenN       int
-	startTime      time.Time
-	baseTime       time.Time
-	now            time.Time
-	timePerSeries  int64 // How much the client is backing off due to unacceptible response times.
-	currentDelay   time.Duration
-	wmaLatency     float64
-	latencyHistory []time.Duration
-	totalLatency   time.Duration
-	currentErrors  int   // The current number of errors since last reporting.
-	totalErrors    int64 // The total number of errors encountered.
+	mu                sync.Mutex
+	writtenN          int
+	startTime         time.Time
+	baseTime          time.Time
+	now               time.Time
+	timePerSeries     int64 // How much the client is backing off due to unacceptible response times.
+	currentDelay      time.Duration
+	wmaLatency        float64
+	latencyHistory    []time.Duration
+	totalLatency      time.Duration
+	currentErrors     int   // The current number of errors since last reporting.
+	totalErrors       int64 // The total number of errors encountered.
+	connRefusedErrors int
 
 	Stdout io.Writer
 	Stderr io.Writer
@@ -447,6 +447,7 @@ func (s *Simulator) Stats() *Stats {
 			"values_ps":      pThrough * float64(s.FieldsPerPoint),
 			"cardinality":    s.actualSeriesCardinality(),
 			"write_error":    s.currentErrors,
+			"connection_refused_error": s.connRefusedErrors,
 			"resp_wma":       int(s.wmaLatency),
 			"resp_mean":      respMean,
 			"resp_90":        int(s.quartileResponse(0.9) / time.Millisecond),
@@ -550,9 +551,9 @@ func (s *Simulator) printMonitorStats() {
 	currentErrors := s.currentErrors
 	s.mu.Unlock()
 
-	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec), %d series cardinality, errors: %d%s%s\n",
+	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec), %d series cardinality, errors: %d, connection refused errors: %d%s%s\n",
 		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.actualSeriesCardinality(),
-		currentErrors,
+		currentErrors, s.connRefusedErrors,
 		delay, responses)
 }
 
@@ -591,7 +592,7 @@ func (s *Simulator) runClient(ctx context.Context, ch <-chan []byte) {
 
 					if s.MaxErrors > 0 && totalErrors >= int64(s.MaxErrors) {
 						fmt.Fprintf(s.Stderr, "Exiting due to reaching %d errors.\n", totalErrors)
-						os.Exit(1)
+						return
 					}
 					continue
 				}
@@ -680,8 +681,16 @@ func (s *Simulator) sendBatch(buf []byte) error {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
+			s.mu.Lock()
+			s.connRefusedErrors++
+			s.totalErrors++
+			s.mu.Unlock()
 			return ErrConnectionRefused
 		}
+		s.mu.Lock()
+		s.currentErrors++
+		s.totalErrors++
+		s.mu.Unlock()
 		return err
 	}
 	defer resp.Body.Close()
