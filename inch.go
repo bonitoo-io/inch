@@ -336,7 +336,11 @@ func (s *Simulator) stepTags() {
 func (s *Simulator) actualSeriesCardinality() int {
 	var tc = 1
 	for _,t := range s.maxTagValues {
-		tc *= t
+		if t > 0 {
+			tc *= t
+		} else {
+			break
+		}
 	}
 	return tc
 }
