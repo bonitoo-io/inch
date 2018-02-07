@@ -680,7 +680,7 @@ func (s *Simulator) sendBatch(buf []byte) error {
 	latency := time.Since(now)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") {
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "No connection could be made") {
 			s.mu.Lock()
 			s.connRefusedErrors++
 			s.totalErrors++
