@@ -244,7 +244,7 @@ func (s *Simulator) Run(ctx context.Context) error {
 	}
 
 	// Stream batches from a separate goroutine.
-	ch := s.generateBatches()
+	ch := s.generateBatches(s.Concurrency)
 
 	// Start clients.
 	var wg sync.WaitGroup
@@ -346,8 +346,8 @@ func (s *Simulator) actualSeriesCardinality() int {
 }
 
 // generateBatches returns a channel for streaming batches.
-func (s *Simulator) generateBatches() <-chan []byte {
-	ch := make(chan []byte, 10)
+func (s *Simulator) generateBatches(concurency int) <-chan []byte {
+	ch := make(chan []byte, concurency)
 
 	go func() {
 		var buf bytes.Buffer
@@ -373,7 +373,7 @@ func (s *Simulator) generateBatches() <-chan []byte {
 		if ts < 1 {
 			ts = 1
 		}
-		tagFormat := fmt.Sprintf(",tag%%d=value%%0%dd", ts)
+		tagFormat := fmt.Sprintf(",tag%%d=%%0%dd", ts)
 		for i := 0; i < s.PointN(); i++ {
 			// Write point.
 			buf.Write([]byte(fmt.Sprintf("m%d", i%s.Measurements)))
