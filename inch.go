@@ -441,7 +441,7 @@ func (s *Simulator) Stats() *Stats {
 			"values_written": s.writtenN * s.FieldsPerPoint,
 			"points_ps":      pThrough,
 			"values_ps":      pThrough * float64(s.FieldsPerPoint),
-			"cardinality":    s.maxCardinalityReached,
+			"cardinality":    s.reachedCardinality,
 			"write_error":    s.currentErrors,
 			"connection_refused_error": s.connRefusedErrors,
 			"resp_wma":       int(s.wmaLatency),
@@ -548,7 +548,7 @@ func (s *Simulator) printMonitorStats() {
 	s.mu.Unlock()
 
 	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec), %d series cardinality, errors: %d, connection refused errors: %d%s%s\n",
-		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.maxCardinalityReached,
+		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.reachedCardinality,
 		currentErrors, s.connRefusedErrors,
 		delay, responses)
 }
