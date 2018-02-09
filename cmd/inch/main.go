@@ -121,7 +121,7 @@ func (m *Main) ParseFlags(args []string) error {
 	// Parse report tags.
 	if *reportTags != "" {
 		for _, tagPair := range strings.Split(*reportTags, ",") {
-			tag := strings.Split(tagPair, "=")
+			tag := strings.Split(tagPair, ":")
 			if len(tag) != 2 {
 				return fmt.Errorf("invalid tag pair %q", tagPair)
 			}
