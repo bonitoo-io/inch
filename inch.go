@@ -63,7 +63,8 @@ type Simulator struct {
 	alpha float64
 	//actual tags values
 	tagValues	[]int
-	maxTagValues	[]int
+	maxCardinalityReached bool
+	reachedCardinality uint64
 
 	hostsDivider	int
 
@@ -321,28 +322,20 @@ func (s *Simulator) stepTags() {
 	// Increment next tag value.
 	for i := range s.tagValues {
 		s.tagValues[i]++
-		if s.maxTagValues[i] < s.tagValues[i] {
-			s.maxTagValues[i] = s.tagValues[i]
+		if !s.maxCardinalityReached {
+			s.reachedCardinality++
 		}
 		if s.tagValues[i] < s.Tags[i] {
 			break
 		} else {
 			s.tagValues[i] = 0 // reset to zero, increment next value
+			if i == len(s.tagValues) - 1 {
+				//zeroing major tag value means we reached max cardinality
+				s.maxCardinalityReached = true
+			}
 			continue
 		}
 	}
-}
-
-func (s *Simulator) actualSeriesCardinality() int {
-	var tc = 1
-	for _,t := range s.maxTagValues {
-		if t > 0 {
-			tc *= t
-		} else {
-			break
-		}
-	}
-	return tc
 }
 
 // generateBatches returns a channel for streaming batches.
@@ -352,7 +345,6 @@ func (s *Simulator) generateBatches(concurency int) <-chan []byte {
 	go func() {
 		var buf bytes.Buffer
 		s.tagValues = make([]int, len(s.Tags))
-		s.maxTagValues = make([]int, len(s.Tags))
 		lastWrittenTotal := s.WrittenN()
 
 		// Generate field string.
@@ -449,7 +441,7 @@ func (s *Simulator) Stats() *Stats {
 			"values_written": s.writtenN * s.FieldsPerPoint,
 			"points_ps":      pThrough,
 			"values_ps":      pThrough * float64(s.FieldsPerPoint),
-			"cardinality":    s.actualSeriesCardinality(),
+			"cardinality":    s.maxCardinalityReached,
 			"write_error":    s.currentErrors,
 			"connection_refused_error": s.connRefusedErrors,
 			"resp_wma":       int(s.wmaLatency),
@@ -556,7 +548,7 @@ func (s *Simulator) printMonitorStats() {
 	s.mu.Unlock()
 
 	fmt.Printf("T=%08d %d points written (%0.1f pt/sec | %0.1f val/sec), %d series cardinality, errors: %d, connection refused errors: %d%s%s\n",
-		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.actualSeriesCardinality(),
+		int(elapsed), writtenN, float64(writtenN)/elapsed, float64(s.FieldsPerPoint)*(float64(writtenN)/elapsed), s.maxCardinalityReached,
 		currentErrors, s.connRefusedErrors,
 		delay, responses)
 }
