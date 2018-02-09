@@ -319,12 +319,13 @@ func (s *Simulator) BatchN() int {
 }
 
 func (s *Simulator) stepTags() {
+	//tag value is generated from numbers, so max cardinality can be calculated by increasing this
+	if !s.maxCardinalityReached {
+		s.reachedCardinality++
+	}
 	// Increment next tag value.
 	for i := range s.tagValues {
 		s.tagValues[i]++
-		if !s.maxCardinalityReached {
-			s.reachedCardinality++
-		}
 		if s.tagValues[i] < s.Tags[i] {
 			break
 		} else {
