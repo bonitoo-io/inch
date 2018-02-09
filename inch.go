@@ -441,7 +441,7 @@ func (s *Simulator) Stats() *Stats {
 			"values_written": s.writtenN * s.FieldsPerPoint,
 			"points_ps":      pThrough,
 			"values_ps":      pThrough * float64(s.FieldsPerPoint),
-			"cardinality":    s.reachedCardinality,
+			"cardinality":    int(s.reachedCardinality),
 			"write_error":    s.currentErrors,
 			"connection_refused_error": s.connRefusedErrors,
 			"resp_wma":       int(s.wmaLatency),
