@@ -63,7 +63,7 @@ func (m *Main) ParseFlags(args []string) error {
 	fs.StringVar(&m.inch.ReportHost, "report-host", "", "Host to send metrics")
 	fs.StringVar(&m.inch.ReportUser, "report-user", "", "User for Host to send metrics")
 	fs.StringVar(&m.inch.ReportPassword, "report-password", "", "Password Host to send metrics")
-	reportTags := fs.String("report-tags", "", "Comma separated k=v tags to report alongside metrics")
+	reportTags := fs.String("report-tags", "", "Comma separated k:v tags to report alongside metrics")
 	fs.BoolVar(&m.inch.DryRun, "dry", false, "Dry run (maximum writer perf of inch on box)")
 	fs.IntVar(&m.inch.MaxErrors, "max-errors", 0, "Terminate process if this many errors encountered")
 	hosts := fs.String( "hosts", "http://localhost:8086", "Comma-separated list of hosts. Will be used in round-robin fashion")
