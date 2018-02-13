@@ -83,6 +83,7 @@ func (m *Main) ParseFlags(args []string) error {
 	fs.StringVar(&m.inch.StartTime, "start-time", "", "Set start time (default now)")
 	fs.DurationVar(&m.inch.TimeSpan, "time", 0, "Time span to spread writes over")
 	fs.DurationVar(&m.inch.Delay, "delay", 0, "Delay between writes")
+	fs.IntVar(&m.inch.DatabaseCreationTimeout, "db-creation-timeout", 5, "Max time, in sec, to wait for database is created")
 	fs.DurationVar(&m.inch.TargetMaxLatency, "target-latency", 0, "If set inch will attempt to adapt write delay to meet target")
 
 	if err := fs.Parse(args); err != nil {

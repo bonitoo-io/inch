@@ -91,6 +91,7 @@ type Simulator struct {
 	TargetMaxLatency time.Duration
 
 	Database      string
+	DatabaseCreationTimeout int
 	ShardDuration string        // Set a custom shard duration.
 	StartTime     string        // Set a custom start time.
 	TimeSpan      time.Duration // The length of time to span writes over.
@@ -641,7 +642,55 @@ func (s *Simulator) setup() error {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	return nil
+	req, err = http.NewRequest("GET", fmt.Sprintf("%s/query?q=SHOW+DATABASES", s.Hosts[0]),nil)
+	if err != nil {
+		return err
+	}
+
+	type listingType struct {
+		Results []struct {
+			Series []struct {
+				Values [][]string
+			}
+		}
+	}
+
+	for i:=0;i<s.DatabaseCreationTimeout;i++ {
+		resp, err = s.writeClient.Do(req)
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+
+		resp.Body.Close()
+
+		if err != nil {
+			return err
+		}
+
+
+		var listing listingType
+		err = json.Unmarshal(body, &listing)
+		if err != nil {
+			return  err
+		}
+
+		for _, nestedName := range listing.Results[0].Series[0].Values {
+			name := nestedName[0]
+			// the _internal database is skipped:
+			if name == s.Database {
+				return nil
+			}
+			time.Sleep( time.Second)
+		}
+
+
+	}
+
+	return fmt.Errorf("database '%s' was not created in %d wait time", s.Database, s.DatabaseCreationTimeout)
 }
 
 // sendBatch writes a batch to the server. Continually retries until successful.
