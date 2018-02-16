@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/bonitoo-io/inch"
+	"log"
+	"runtime/pprof"
 )
 
 // Main represents the main program execution.
@@ -19,6 +21,7 @@ type Main struct {
 	Stderr io.Writer
 
 	inch *inch.Simulator
+	cpuProfileFile string
 }
 
 func main() {
@@ -28,6 +31,15 @@ func main() {
 	if err := m.ParseFlags(os.Args[1:]); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	if m.cpuProfileFile != "" {
+		f, err := os.Create(m.cpuProfileFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 
 	// run inch
@@ -85,6 +97,7 @@ func (m *Main) ParseFlags(args []string) error {
 	fs.DurationVar(&m.inch.Delay, "delay", 0, "Delay between writes")
 	fs.IntVar(&m.inch.DatabaseCreationTimeout, "db-creation-timeout", 5, "Max time, in sec, to wait for database is created")
 	fs.DurationVar(&m.inch.TargetMaxLatency, "target-latency", 0, "If set inch will attempt to adapt write delay to meet target")
+	fs.StringVar(&m.cpuProfileFile, "cpuprofile", "", "write cpu profile to file")
 
 	if err := fs.Parse(args); err != nil {
 		return err
