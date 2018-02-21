@@ -123,6 +123,7 @@ func (m *Main) ParseFlags(args []string) error {
 		"stress_tool": "inch",
 		"t":           *tags,
 		"tag_size":	   fmt.Sprint(m.inch.TagSize),
+		"consistency": fmt.Sprint(m.inch.Consistency),
 		"batch_size":  fmt.Sprint(m.inch.BatchSize ),
 		"p":           fmt.Sprint(m.inch.PointsPerSeries),
 		"c":           fmt.Sprint(m.inch.Concurrency),
