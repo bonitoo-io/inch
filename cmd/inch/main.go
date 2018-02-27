@@ -92,6 +92,7 @@ func (m *Main) ParseFlags(args []string) error {
 	fs.IntVar(&m.inch.BatchSize, "b", 5000, "Batch size")
 	fs.StringVar(&m.inch.Database, "db", "stress", "Database to write to")
 	fs.StringVar(&m.inch.ShardDuration, "shard-duration", "7d", "Set shard duration (default 7d)")
+	fs.IntVar(&m.inch.Replication, "r", 1, "Replication factor")
 	fs.StringVar(&m.inch.StartTime, "start-time", "", "Set start time (default now)")
 	fs.DurationVar(&m.inch.TimeSpan, "time", 0, "Time span to spread writes over")
 	fs.DurationVar(&m.inch.Delay, "delay", 0, "Delay between writes")
@@ -124,6 +125,7 @@ func (m *Main) ParseFlags(args []string) error {
 		"t":           *tags,
 		"tag_size":	   fmt.Sprint(m.inch.TagSize),
 		"consistency": fmt.Sprint(m.inch.Consistency),
+		"replication": fmt.Sprint(m.inch.Replication),
 		"batch_size":  fmt.Sprint(m.inch.BatchSize ),
 		"p":           fmt.Sprint(m.inch.PointsPerSeries),
 		"c":           fmt.Sprint(m.inch.Concurrency),

@@ -81,6 +81,7 @@ type Simulator struct {
 	Password         string
 	Consistency      string
 	Concurrency      int
+	Replication      int
 	Measurements     int   // Number of measurements
 	Tags             []int // tag cardinalities
 	TagSize			 int
@@ -155,7 +156,7 @@ func (s *Simulator) Validate() error {
 			return el
 		}
 
-		if resp, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks"`), "", "")); err != nil || resp.Err != "" {
+		if resp, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks" REPLICATION %d`, s.Replication), "", "")); err != nil || resp.Err != "" {
 			var errMess string
 			if err != nil {
 				errMess = err.Error()
