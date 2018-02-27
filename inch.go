@@ -198,7 +198,7 @@ func (s *Simulator) Run(ctx context.Context) error {
 	fmt.Fprintf(s.Stdout, "Total fields per point: %d\n", s.FieldsPerPoint)
 	fmt.Fprintf(s.Stdout, "Field size: %d\n", s.FieldSize)
 	fmt.Fprintf(s.Stdout, "Batch Size: %d\n", s.BatchSize)
-	fmt.Fprintf(s.Stdout, "Database: %s (Shard duration: %s)\n", s.Database, s.ShardDuration)
+	fmt.Fprintf(s.Stdout, "Database: %s (Shard duration: %s, Replication %d)\n", s.Database, s.ShardDuration, s.Replication)
 	fmt.Fprintf(s.Stdout, "Write Consistency: %s\n", s.Consistency)
 
 	if s.TargetMaxLatency > 0 {
