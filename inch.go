@@ -156,7 +156,7 @@ func (s *Simulator) Validate() error {
 			return el
 		}
 
-		if resp, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks" REPLICATION %d`, s.Replication), "", "")); err != nil || resp.Err != "" {
+		if resp, err := s.clt.Query(client.NewQuery(fmt.Sprintf(`CREATE DATABASE "ingest_benchmarks"`), "", "")); err != nil || resp.Err != "" {
 			var errMess string
 			if err != nil {
 				errMess = err.Error()
@@ -628,7 +628,7 @@ func (s *Simulator) setup() error {
 		s.ReportTags["version"] = version
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/query", s.Hosts[0]), strings.NewReader("q=CREATE+DATABASE+"+s.Database+"+WITH+DURATION+"+s.ShardDuration))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/query", s.Hosts[0]), strings.NewReader("q=CREATE+DATABASE+"+s.Database+"+WITH+DURATION+"+s.ShardDuration+"+REPLICATION+"+ fmt.Sprint(s.Replication)))
 	if err != nil {
 		return err
 	}
