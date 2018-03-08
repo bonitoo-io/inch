@@ -72,6 +72,7 @@ func (m *Main) ParseFlags(args []string) error {
 
 	fs := flag.NewFlagSet("inch", flag.ContinueOnError)
 	fs.BoolVar(&m.inch.Verbose, "v", false, "Verbose")
+	fs.Uint64Var(&m.inch.MonitorInterval, "monitor-interval", 1, "Progress monitoring interval")
 	fs.StringVar(&m.inch.ReportHost, "report-host", "", "Host to send metrics")
 	fs.StringVar(&m.inch.ReportUser, "report-user", "", "User for Host to send metrics")
 	fs.StringVar(&m.inch.ReportPassword, "report-password", "", "Password Host to send metrics")

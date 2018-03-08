@@ -75,6 +75,7 @@ type Simulator struct {
 	ReportTags     map[string]string
 	DryRun         bool
 	MaxErrors      int
+	MonitorInterval	uint64
 
 	Hosts             []string
 	User             string
@@ -96,7 +97,7 @@ type Simulator struct {
 	ShardDuration string        // Set a custom shard duration.
 	StartTime     string        // Set a custom start time.
 	TimeSpan      time.Duration // The length of time to span writes over.
-	Delay         time.Duration // A delay inserted in between writes.
+	Delay         time.Duration // A delay inserted in between writes
 }
 
 // NewSimulator returns a new instance of Simulator.
@@ -125,6 +126,7 @@ func NewSimulator() *Simulator {
 		BatchSize:       5000,
 		Database:        "db",
 		ShardDuration:   "7d",
+		MonitorInterval: 5,
 	}
 }
 
@@ -488,7 +490,7 @@ func (s *Simulator) Stats() *Stats {
 
 // runMonitor periodically prints the current status.
 func (s *Simulator) runMonitor(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker( time.Duration(s.MonitorInterval) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -500,7 +502,7 @@ func (s *Simulator) runMonitor(ctx context.Context) {
 			}
 			return
 		case <-ticker.C:
-			s.printMonitorStats()
+			//s.printMonitorStats()
 			if s.ReportHost != "" {
 				s.sendMonitorStats(false)
 			}
